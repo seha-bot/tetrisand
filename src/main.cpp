@@ -1,15 +1,16 @@
+#include "gui.hpp"
 #include "config.hpp"
-#include "drawit.hpp"
-#include "sand.hpp"
-#include <chrono>
-#include <unistd.h>
+#include "simulation.hpp"
+#include <cstdlib>
+#include <ctime>
+#include <raylib.h>
 
-static sand::Solid generateRandomSolid(uint32_t x, uint32_t y) {
+static sim::Solid generateRandomSolid(uint32_t x, uint32_t y) {
     return { cfg::masks[rand() % cfg::masks.size()], cfg::maskColors[rand() % cfg::maskColors.size()], x, y };
 }
 
 // TODO this name is unclear
-static void replaceCheck(sand::SandGrid& grid, double& solidTick) {
+static void replaceCheck(sim::SandGrid& grid, double& solidTick) {
     if (grid.doesCurrentSolidTouchSandOrBottom()) {
         grid.convertCurrentSolidToSand();
         solidTick = -1.0;
@@ -20,62 +21,51 @@ static void replaceCheck(sand::SandGrid& grid, double& solidTick) {
 int main() {
     std::srand(std::time(nullptr));
 
-    drw::Window window(cfg::gridWidth * cfg::cellSize, cfg::gridHeight * cfg::cellSize);
-    sand::SandGrid grid(cfg::gridWidth, cfg::gridHeight, cfg::cellSize);
+    gui::Window window("tetrisand", cfg::gridWidth * cfg::cellSize, cfg::gridHeight * cfg::cellSize);
+    sim::SandGrid grid(cfg::gridWidth, cfg::gridHeight, cfg::cellSize);
 
     grid.placeSolid(generateRandomSolid(0, 0));
-
-    const auto targetFPS = 1.0 / 60.0;
-    auto lastTime = std::chrono::system_clock::now();
 
     double sandTick = 0.0;
     double solidTick = 0.0;
 
-    while (!window.isClosed() && !window.isKeyDown(drw::Key::escape)) {
-        const auto now = std::chrono::system_clock::now();
-        const auto subDeltaTime = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastTime).count() * 0.001;
-        if (subDeltaTime < targetFPS) {
-            usleep((targetFPS - subDeltaTime) * 1000000.0);
-        }
-        lastTime = std::chrono::system_clock::now();
-        const auto deltaTime = std::max(subDeltaTime, targetFPS);
-
+    while (!window.isClosed()) {
         window.pollEvents();
-        if (window.isKeyDown(drw::Key::left)) {
-            grid.moveCurrentSolid(sand::Direction::left);
+        if (window.isKeyDown(KEY_LEFT)) {
+            grid.moveCurrentSolid(sim::Direction::left);
             replaceCheck(grid, solidTick);
         }
-        if (window.isKeyDown(drw::Key::right)) {
-            grid.moveCurrentSolid(sand::Direction::right);
+        if (window.isKeyDown(KEY_RIGHT)) {
+            grid.moveCurrentSolid(sim::Direction::right);
             replaceCheck(grid, solidTick);
         }
-        if (window.isKeyDown(drw::Key::down)) {
-            grid.moveCurrentSolid(sand::Direction::down);
+        if (window.isKeyDown(KEY_DOWN)) {
+            grid.moveCurrentSolid(sim::Direction::down);
             replaceCheck(grid, solidTick);
         }
-        if (window.isKeyDown(drw::Key::space)) {
+        if (window.isKeyDown(KEY_SPACE)) {
             solidTick = sandTick = -10000;
         }
-        if (window.isKeyDownOnce(drw::Key::up)) {
+        if (window.isKeyDownOnce(KEY_UP)) {
             grid.rotateCurrentSolid();
         }
 
-        sandTick += deltaTime;
+        sandTick += GetFrameTime();
         if (sandTick > 0.01) {
             sandTick -= 0.01;
             grid.updateSand();
             replaceCheck(grid, solidTick);
 
-            const auto id = sand::getAnyAreaId(grid);
+            const auto id = sim::getAnyAreaId(grid);
             if (id.has_value()) {
-                sand::removeArea(grid, id.value());
+                sim::removeArea(grid, id.value());
             }
         }
 
-        solidTick += deltaTime;
+        solidTick += GetFrameTime();
         if (solidTick > 0.03) {
             solidTick -= 0.03;
-            grid.moveCurrentSolid(sand::Direction::down);
+            grid.moveCurrentSolid(sim::Direction::down);
             replaceCheck(grid, solidTick);
         }
 

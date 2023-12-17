@@ -1,33 +1,40 @@
 #ifndef GUIHPP
 #define GUIHPP
 
+#include <SDL2/SDL_scancode.h>
 #include <cstdint>
-#include <raylib.h>
+#include <memory>
 
 namespace gui {
-    class Window final {
+    class SDLCleaner final {
     public:
-        void drawPixel(int32_t x, int32_t y, uint32_t color) noexcept;
-        void drawRect(int32_t x, int32_t y, int32_t width, int32_t height, uint32_t color) noexcept;
+        SDLCleaner();
+        SDLCleaner(const SDLCleaner&) = delete;
+        SDLCleaner& operator=(const SDLCleaner&) = delete;
+        SDLCleaner(SDLCleaner&&) = delete;
+        SDLCleaner& operator=(SDLCleaner&&) = delete;
+        ~SDLCleaner();
+    };
+
+    class Window final {
+        std::shared_ptr<struct WindowHandle> wH;
+        bool isClosed_;
+    public:
+        void drawPixel(int32_t x, int32_t y, uint32_t color);
+        void drawRect(int32_t x, int32_t y, int32_t width, int32_t height, uint32_t color);
 
         void flush() noexcept;
         void pollEvents() noexcept;
 
-        // TODO map all keys to a Key struct and remove raylib.h
-        // from this header
-        bool isKeyDown(int key) const noexcept { return ::IsKeyDown(key); }
-        bool isKeyDownOnce(int key) const noexcept { return IsKeyPressed(key); }
+        bool isKeyDown(SDL_Scancode key) const noexcept;
+        bool isKeyDownOnce(SDL_Scancode key) const noexcept;
 
-        bool isClosed() const noexcept;
+        bool isClosed() const noexcept { return isClosed_; }
 
         Window(const char *title, uint32_t width, uint32_t height);
 
-        // No copying and moving because Window is a singleton under raylib
-        Window(const Window&) = delete;
-        Window& operator=(const Window&) = delete;
-        Window(Window&&) = delete;
-        Window& operator=(Window&&) = delete;
-
+        Window(const Window&) = default;
+        Window& operator=(const Window&) = default;
         ~Window();
     };
 }

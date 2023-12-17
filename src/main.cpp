@@ -1,9 +1,8 @@
 #include "gui.hpp"
 #include "config.hpp"
 #include "simulation.hpp"
-#include <cstdlib>
+#include <SDL2/SDL_timer.h>
 #include <ctime>
-#include <raylib.h>
 
 static sim::Solid generateRandomSolid(uint32_t x, uint32_t y) {
     return { cfg::masks[rand() % cfg::masks.size()], cfg::maskColors[rand() % cfg::maskColors.size()], x, y };
@@ -20,37 +19,44 @@ static void replaceCheck(sim::SandGrid& grid, double& solidTick) {
 
 int main() {
     std::srand(std::time(nullptr));
+    gui::SDLCleaner cleaner;
 
     gui::Window window("tetrisand", cfg::gridWidth * cfg::cellSize, cfg::gridHeight * cfg::cellSize);
     sim::SandGrid grid(cfg::gridWidth, cfg::gridHeight, cfg::cellSize);
 
     grid.placeSolid(generateRandomSolid(0, 0));
 
+    double dt = 0.0;
+    auto start = SDL_GetTicks();
     double sandTick = 0.0;
     double solidTick = 0.0;
 
     while (!window.isClosed()) {
+        auto now = SDL_GetTicks();
+        dt = (now - start) / 1000.0;
+        start = now;
+
         window.pollEvents();
-        if (window.isKeyDown(KEY_LEFT)) {
+        if (window.isKeyDown(SDL_SCANCODE_LEFT)) {
             grid.moveCurrentSolid(sim::Direction::left);
             replaceCheck(grid, solidTick);
         }
-        if (window.isKeyDown(KEY_RIGHT)) {
+        if (window.isKeyDown(SDL_SCANCODE_RIGHT)) {
             grid.moveCurrentSolid(sim::Direction::right);
             replaceCheck(grid, solidTick);
         }
-        if (window.isKeyDown(KEY_DOWN)) {
+        if (window.isKeyDown(SDL_SCANCODE_DOWN)) {
             grid.moveCurrentSolid(sim::Direction::down);
             replaceCheck(grid, solidTick);
         }
-        if (window.isKeyDown(KEY_SPACE)) {
+        if (window.isKeyDown(SDL_SCANCODE_SPACE)) {
             solidTick = sandTick = -10000;
         }
-        if (window.isKeyDownOnce(KEY_UP)) {
+        if (window.isKeyDownOnce(SDL_SCANCODE_UP)) {
             grid.rotateCurrentSolid();
         }
 
-        sandTick += GetFrameTime();
+        sandTick += dt;
         if (sandTick > 0.01) {
             sandTick -= 0.01;
             grid.updateSand();
@@ -62,7 +68,7 @@ int main() {
             }
         }
 
-        solidTick += GetFrameTime();
+        solidTick += dt;
         if (solidTick > 0.03) {
             solidTick -= 0.03;
             grid.moveCurrentSolid(sim::Direction::down);

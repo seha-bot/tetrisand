@@ -4,8 +4,9 @@
 #include <cstdint>
 #include <stdexcept>
 #include <vector>
+#include <cassert>
 
-namespace sim {
+namespace gui {
     template<typename T>
     class Grid {
         std::vector<T> cells_;
@@ -29,7 +30,13 @@ namespace sim {
             return cells_[x + y * width_];
         }
 
-        Grid(uint32_t width, uint32_t height, const T& allocator = T()) : cells_(width * height, allocator), width_(width), height_(height) {}
+        Grid(uint32_t width, uint32_t height, const T& allocator = T()) noexcept
+            : cells_(width * height, allocator), width_(width), height_(height) {}
+
+        Grid(const std::vector<T>& data, uint32_t width, uint32_t height) noexcept
+            : cells_(data), width_(width), height_(height) {
+            assert(data.size() == width * height);
+        }
     };
 
     template<typename T>

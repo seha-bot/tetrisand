@@ -26,7 +26,7 @@ namespace sim {
                     continue;
                 }
 
-                CellNeighbours others(*this, x, y);
+                gui::CellNeighbours others(*this, x, y);
                 if (others.bottom == nullptr) {
                     continue;
                 }
@@ -54,9 +54,9 @@ namespace sim {
     void SandGrid::placeSolid(const Solid& solid) {
         currentSolid_.emplace(solid);
 
-        for (uint32_t y = 0; y < solid.mask.height(); y++) {
-            for (uint32_t x = 0; x < solid.mask.width(); x++) {
-                const uint8_t pixel = solid.mask.at(x, y);
+        for (uint32_t y = 0; y < solid.texture.height(); y++) {
+            for (uint32_t x = 0; x < solid.texture.width(); x++) {
+                const uint8_t pixel = solid.texture.at(x, y) & 0xFF;
                 if (pixel == 0) {
                     continue;
                 }
@@ -77,9 +77,9 @@ namespace sim {
             throw std::runtime_error("trying to remove a solid when there are none");
         }
 
-        for (uint32_t y = 0; y < currentSolid_->mask.height(); y++) {
-            for (uint32_t x = 0; x < currentSolid_->mask.width(); x++) {
-                if (currentSolid_->mask.at(x, y) == 0) {
+        for (uint32_t y = 0; y < currentSolid_->texture.height(); y++) {
+            for (uint32_t x = 0; x < currentSolid_->texture.width(); x++) {
+                if (currentSolid_->texture.at(x, y) == 0) {
                     continue;
                 }
                 at(currentSolid_->x + x, currentSolid_->y + y) = Grain::empty();
@@ -103,7 +103,7 @@ namespace sim {
                 }
             break;
             case Direction::right:
-                if (currentSolid_->x + currentSolid_->mask.width() != width()) {
+                if (currentSolid_->x + currentSolid_->texture.width() != width()) {
                     newX++;
                 }
             break;
@@ -113,7 +113,7 @@ namespace sim {
                 }
             break;
             case Direction::down:
-                if (currentSolid_->y + currentSolid_->mask.height() != height()) {
+                if (currentSolid_->y + currentSolid_->texture.height() != height()) {
                     newY++;
                 }
             break;
@@ -127,10 +127,9 @@ namespace sim {
     }
 
     static bool doesSolidFit(const SandGrid& grid, const Solid& solid) noexcept {
-        for (uint32_t y = 0; y < solid.mask.height(); y++) {
-            for (uint32_t x = 0; x < solid.mask.width(); x++) {
-                const uint8_t pixel = solid.mask.at(x, y);
-                if (pixel == 0) {
+        for (uint32_t y = 0; y < solid.texture.height(); y++) {
+            for (uint32_t x = 0; x < solid.texture.width(); x++) {
+                if (solid.texture.at(x, y) == 0) {
                     continue;
                 }
 
@@ -153,7 +152,7 @@ namespace sim {
         }
 
         auto solid = currentSolid_.value();
-        solid.mask.ror();
+        solid.texture = solid.texture.ror();
 
         if (doesSolidFit(*this, solid)) {
             removeCurrentSolid();
@@ -166,17 +165,17 @@ namespace sim {
             throw std::runtime_error("trying to check a solid when there are none");
         }
 
-        if (currentSolid_->y + currentSolid_->mask.height() == height()) {
+        if (currentSolid_->y + currentSolid_->texture.height() == height()) {
             return true;
         }
 
-        for (uint32_t y = 0; y < currentSolid_->mask.height(); y++) {
-            for (uint32_t x = 0; x < currentSolid_->mask.width(); x++) {
-                if (currentSolid_->mask.at(x, y) == 0) {
+        for (uint32_t y = 0; y < currentSolid_->texture.height(); y++) {
+            for (uint32_t x = 0; x < currentSolid_->texture.width(); x++) {
+                if (currentSolid_->texture.at(x, y) == 0) {
                     continue;
                 }
                 // const_cast is safe here because data is never modified
-                const CellNeighbours others(const_cast<SandGrid&>(*this), currentSolid_->x + x, currentSolid_->y + y);
+                const gui::CellNeighbours others(const_cast<SandGrid&>(*this), currentSolid_->x + x, currentSolid_->y + y);
 
                 if ((others.left != nullptr && others.left->state == GrainState::sand)
                     || (others.right != nullptr && others.right->state == GrainState::sand)
@@ -194,9 +193,9 @@ namespace sim {
             throw std::runtime_error("trying to convert a solid when there are none");
         }
 
-        for (uint32_t y = 0; y < currentSolid_->mask.height(); y++) {
-            for (uint32_t x = 0; x < currentSolid_->mask.width(); x++) {
-                if (currentSolid_->mask.at(x, y) == 0) {
+        for (uint32_t y = 0; y < currentSolid_->texture.height(); y++) {
+            for (uint32_t x = 0; x < currentSolid_->texture.width(); x++) {
+                if (currentSolid_->texture.at(x, y) == 0) {
                     continue;
                 }
                 at(currentSolid_->x + x, currentSolid_->y + y).state = GrainState::sand;

@@ -3,7 +3,7 @@
 
 #include "grid.hpp"
 #include "gui.hpp"
-#include "mask.hpp"
+#include "texture.hpp"
 #include <cstdint>
 #include <optional>
 
@@ -19,7 +19,7 @@ namespace sim {
     };
 
     struct Solid {
-        gui::Mask mask;
+        gui::PostProcessedTexture texture;
         uint32_t color;
         uint32_t x;
         uint32_t y;
@@ -27,7 +27,7 @@ namespace sim {
 
     enum class Direction { left, right, up, down };
 
-    class SandGrid : public Grid<Grain> {
+    class SandGrid : public gui::Grid<Grain> {
         const uint16_t cellSize_;
 
         std::optional<Solid> currentSolid_;

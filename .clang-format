@@ -1,0 +1,5 @@
+BasedOnStyle: Mozilla
+IndentWidth: 4
+FixNamespaceComments: true
+DerivePointerAlignment: false
+PointerAlignment: Left

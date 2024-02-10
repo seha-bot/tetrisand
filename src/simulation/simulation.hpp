@@ -8,48 +8,71 @@
 #include <optional>
 
 namespace sim {
-    enum class GrainState { empty, solid, sand };
 
-    struct Grain {
-        GrainState state;
-        uint8_t mask;
-        uint32_t color;
+enum class GrainState
+{
+    empty,
+    solid,
+    sand
+};
 
-        static Grain empty() { return {GrainState::empty, 0, 0}; }
-    };
+struct Grain
+{
+    GrainState state;
+    uint8_t mask;
+    uint32_t color;
 
-    struct Solid {
-        gui::PostProcessedTexture texture;
-        uint32_t color;
-        uint32_t x;
-        uint32_t y;
-    };
+    static Grain empty() { return { GrainState::empty, 0, 0 }; }
+};
 
-    enum class Direction { left, right, up, down };
+struct Solid
+{
+    gui::PostProcessedTexture texture;
+    uint32_t color;
+    uint32_t x;
+    uint32_t y;
+};
 
-    class SandGrid : public gui::Grid<Grain> {
-        const uint16_t cellSize_;
+enum class Direction
+{
+    left,
+    right,
+    up,
+    down
+};
 
-        std::optional<Solid> currentSolid_;
-    public:
-        void draw(gui::Window& window) const noexcept;
+class SandGrid
+  : public gui::Grid<Grain>
+  , gui::Drawable
+{
+    std::optional<Solid> currentSolid;
 
-        void updateSand() noexcept;
+  public:
+    void draw(gui::Window& window) noexcept;
 
-        void placeSolid(const Solid& solid);
-        void removeCurrentSolid();
-        void moveCurrentSolid(Direction direction);
-        void rotateCurrentSolid();
+    void updateSand() noexcept;
 
-        bool doesCurrentSolidTouchSandOrBottom() const;
-        void convertCurrentSolidToSand();
+    void placeSolid(const Solid& solid);
+    void removeCurrentSolid();
+    void moveCurrentSolid(Direction direction);
+    void rotateCurrentSolid();
 
-        SandGrid(uint32_t width, uint32_t height, uint16_t cellSize) : Grid(width, height, Grain::empty()), cellSize_(cellSize) {}
-    };
+    bool doesCurrentSolidTouchSandOrBottom() const;
+    void convertCurrentSolidToSand();
 
-    std::optional<uint32_t> getAnyAreaId(const SandGrid& grid) noexcept;
+    SandGrid(gui::Window& window, uint32_t width, uint32_t height)
+      : Grid(width, height, Grain::empty())
+      , gui::Drawable(window, width, height)
+    {
+    }
+};
 
-    void removeArea(SandGrid& grid, uint32_t id);
-}
+std::optional<uint32_t>
+getAnyAreaId(const SandGrid& grid) noexcept;
+
+void
+removeArea(SandGrid& grid, uint32_t id);
+
+} // namespace sim
 
 #endif

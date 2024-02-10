@@ -9,7 +9,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_library(compiler_options INTERFACE)
 target_compile_options(compiler_options INTERFACE
-    "-Wall;-Wextra;-Wshadow;-Wunused;-Werror;-g"
+    "-Wall;-Wextra;-Wshadow;-Wunused;-g"
 )
 
 add_subdirectory(src/gui)

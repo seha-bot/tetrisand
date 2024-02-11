@@ -1,11 +1,12 @@
 #include "simulation.hpp"
 #include "gui.hpp"
+#include <cstdint>
 #include <set>
 #include <stdexcept>
 
 namespace sim {
 void
-SandGrid::draw(gui::Window& window) noexcept
+SandGrid::render() noexcept
 {
     gui::DrawCleaner cleaner(get());
     for (uint32_t y = 0; y < height(); y++) {
@@ -17,10 +18,9 @@ SandGrid::draw(gui::Window& window) noexcept
             const auto g = (color >> 8 & 0xFF) * cell.mask / 255;
             const auto b = (color & 0xFF) * cell.mask / 255;
 
-            cleaner.setPixel(x, y, r << 16 | g << 8 | b);
+            cleaner.setPixel(x, y, r, g, b);
         }
     }
-    window.drawTexture(0, 0, 80, 180, *this);
 }
 
 void

@@ -34,7 +34,7 @@ class View
     gui::Window& m_window;
 
   public:
-    virtual void render(double dt) noexcept = 0;
+    virtual void draw(double dt) noexcept = 0;
     View(gui::Window& window)
       : m_window(window)
     {
@@ -51,7 +51,7 @@ class PlayView final : public gui::View
       sim::SandGrid(m_window, cfg::gridWidth, cfg::gridHeight);
 
   public:
-    void render(double dt) noexcept override
+    void draw(double dt) noexcept override
     {
         if (m_window.isKeyDown(SDL_SCANCODE_LEFT)) {
             grid.moveCurrentSolid(sim::Direction::left);
@@ -91,7 +91,17 @@ class PlayView final : public gui::View
             replaceCheck(grid, solidTick);
         }
 
-        grid.draw(m_window);
+        m_window.drawRect(0, 0, m_window.width(), m_window.height(), 0xFFFFFF);
+
+        grid.render();
+        const double aspect = static_cast<double>(grid.height()) / grid.width();
+        const uint32_t scaledWidth = m_window.height() / aspect;
+        if (scaledWidth < m_window.width()) {
+            m_window.drawTexture(0, 0, scaledWidth, m_window.height(), grid);
+        } else {
+            m_window.drawTexture(
+              0, 0, m_window.width(), m_window.width() * aspect, grid);
+        }
     }
 
     PlayView(gui::Window& window)
@@ -104,7 +114,7 @@ class PlayView final : public gui::View
 class IntroView final : public gui::View
 {
   public:
-    void render(double dt) noexcept override
+    void draw(double dt) noexcept override
     {
         std::cout << m_window.width() << dt;
     }
@@ -153,7 +163,7 @@ class Runner final
             start = now;
 
             m_window.pollEvents();
-            m_router.currentView().render(dt);
+            m_router.currentView().draw(dt);
             m_window.flush();
         }
     }

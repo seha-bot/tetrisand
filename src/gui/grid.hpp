@@ -53,14 +53,14 @@ class Grid
 template<typename T>
 struct CellNeighbours
 {
-    T* const top;
-    T* const bottom;
-    T* const left;
-    T* const right;
-    T* const topLeft;
-    T* const topRight;
-    T* const bottomLeft;
-    T* const bottomRight;
+    T *const top;
+    T *const bottom;
+    T *const left;
+    T *const right;
+    T *const topLeft;
+    T *const topRight;
+    T *const bottomLeft;
+    T *const bottomRight;
 
     CellNeighbours(Grid<T>& grid, uint32_t x, uint32_t y)
       : top(y > 0 ? &grid.at(x, y - 1) : nullptr)

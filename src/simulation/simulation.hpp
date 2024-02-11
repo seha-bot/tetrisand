@@ -43,12 +43,16 @@ enum class Direction
 
 class SandGrid
   : public gui::Grid<Grain>
-  , gui::Drawable
+  , public gui::Drawable
 {
     std::optional<Solid> currentSolid;
 
   public:
-    void draw(gui::Window& window) noexcept;
+    // TODO this function is inefficient.
+    // The texture doesn't change every frame, so this
+    // function doesn't need to be constantly called.
+    // Instead, update the texture only when the grid changes.
+    void render() noexcept;
 
     void updateSand() noexcept;
 

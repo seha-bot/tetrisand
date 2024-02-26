@@ -4,6 +4,7 @@
 #include <SDL2/SDL_timer.h>
 #include <cstdint>
 #include <ctime>
+#include <initializer_list>
 #include <memory>
 #include <vector>
 
@@ -94,14 +95,21 @@ class PlayView final : public gui::View
         m_window.drawRect(0, 0, m_window.width(), m_window.height(), 0xFFFFFF);
 
         grid.render();
-        const double aspect = static_cast<double>(grid.height()) / grid.width();
-        const uint32_t scaledWidth = m_window.height() / aspect;
-        if (scaledWidth < m_window.width()) {
-            m_window.drawTexture(0, 0, scaledWidth, m_window.height(), grid);
-        } else {
-            m_window.drawTexture(
-              0, 0, m_window.width(), m_window.width() * aspect, grid);
-        }
+        const int32_t s = std::min(m_window.height(), m_window.width());
+
+        const double gw = static_cast<double>(grid.width()) / grid.height();
+
+        m_window.drawRect((m_window.width() - s) / 2,
+                          (m_window.height() - s) / 2,
+                          s,
+                          s,
+                          0xFF0000);
+
+        m_window.drawTexture((m_window.width() - gw * s) / 2,
+                             (m_window.height() - s) / 2,
+                             gw * s,
+                             s,
+                             grid);
     }
 
     PlayView(gui::Window& window)
@@ -125,26 +133,21 @@ class IntroView final : public gui::View
     }
 };
 
-enum class Route : uint8_t
-{
-    intro,
-    play,
-    gameover
-};
-
 class Router final
 {
-    std::vector<std::unique_ptr<gui::View>> views;
+    std::vector<std::unique_ptr<gui::View>> m_routes;
 
   public:
     uint8_t currentRoute = 0;
 
-    void registerView(std::unique_ptr<gui::View> view) noexcept
-    {
-        views.emplace_back(std::move(view));
-    }
+    gui::View& currentView() { return *m_routes.at(currentRoute).get(); }
 
-    gui::View& currentView() { return *views.at(currentRoute).get(); }
+    Router(std::initializer_list<gui::View *> routes) noexcept
+    {
+        for (auto route : routes) {
+            m_routes.push_back(std::unique_ptr<gui::View>(route));
+        }
+    }
 };
 
 class Runner final
@@ -175,6 +178,15 @@ class Runner final
     }
 };
 
+namespace Route {
+enum Route : uint8_t
+{
+    intro,
+    play,
+    gameover
+};
+}
+
 int
 main()
 {
@@ -183,10 +195,8 @@ main()
     gui::SDLCleaner cleaner;
     gui::Window window("tetrisand", cfg::gridWidth, cfg::gridHeight);
 
-    Router router;
-    router.registerView(std::make_unique<IntroView>(window));
-    router.registerView(std::make_unique<PlayView>(window));
-    router.currentRoute = static_cast<uint8_t>(Route::play);
+    Router router = { new IntroView(window), new PlayView(window) };
+    router.currentRoute = Route::play;
 
     Runner runner(window, router);
     runner.run();

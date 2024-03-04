@@ -62,6 +62,10 @@ struct TextureHandle
 void
 DrawCleaner::setPixel(int32_t x, int32_t y, uint8_t r, uint8_t g, uint8_t b)
 {
+    // TODO bounds bruh
+    if (x < 0 || y < 0 || x >= tH.width) {
+        return;
+    }
     pixels[x + y * tH.width] = SDL_MapRGB(tH.format, r, g, b);
 }
 

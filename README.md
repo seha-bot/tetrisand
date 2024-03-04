@@ -12,4 +12,4 @@ A tetris game without integrity.
 - a real README.md
 - audio
 - CI/CD for windows builds
-- cmake release target
+- replace cmake with Makefile

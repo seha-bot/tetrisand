@@ -1,12 +1,56 @@
 #include "config.hpp"
 #include "gui.hpp"
+#include "layout.hpp"
 #include "simulation.hpp"
+#include "texture.hpp"
 #include <SDL2/SDL_timer.h>
+#include <array>
+#include <cstddef>
 #include <cstdint>
 #include <ctime>
-#include <initializer_list>
-#include <memory>
+#include <string>
+#include <sys/types.h>
 #include <vector>
+
+class ScoreBoard final : public gui::Drawable
+{
+  public:
+    int score = 0;
+    std::array<gui::Texture, 10> digits = {
+        gui::P3Parser::parse("assets/0.ppm"),
+        gui::P3Parser::parse("assets/1.ppm"),
+        gui::P3Parser::parse("assets/2.ppm"),
+        gui::P3Parser::parse("assets/3.ppm"),
+        gui::P3Parser::parse("assets/4.ppm"),
+        gui::P3Parser::parse("assets/5.ppm"),
+        gui::P3Parser::parse("assets/6.ppm"),
+        gui::P3Parser::parse("assets/7.ppm"),
+        gui::P3Parser::parse("assets/8.ppm"),
+        gui::P3Parser::parse("assets/9.ppm")
+    };
+
+    void render()
+    {
+        const auto s = std::to_string(score);
+
+        gui::DrawCleaner cleaner(get());
+
+        for (size_t i = 0; i < s.size(); i++) {
+            const auto d = digits[s[i] - '0'];
+            for (uint32_t y = 0; y < d.height(); y++) {
+                for (uint32_t x = 0; x < d.width(); x++) {
+                    auto [r, g, b] = gui::Color(d.at(x, y)).asDouble();
+                    cleaner.setPixel(x + 8 * i, y, r * 255, g * 255, b * 255);
+                }
+            }
+        }
+    }
+
+    ScoreBoard(gui::Window& window, uint32_t width, uint32_t height)
+      : Drawable(window, width, height)
+    {
+    }
+};
 
 static sim::Solid
 generateRandomSolid(uint32_t x, uint32_t y)
@@ -28,28 +72,14 @@ replaceCheck(sim::SandGrid& grid, double& solidTick)
     }
 }
 
-namespace gui {
-class View
-{
-  protected:
-    gui::Window& m_window;
-
-  public:
-    virtual void draw(double dt) noexcept = 0;
-    View(gui::Window& window)
-      : m_window(window)
-    {
-    }
-    virtual ~View() {}
-};
-} // namespace gui
-
 class PlayView final : public gui::View
 {
     double sandTick = 0.0;
     double solidTick = 0.0;
     sim::SandGrid grid =
       sim::SandGrid(m_window, cfg::gridWidth, cfg::gridHeight);
+    ScoreBoard score =
+      ScoreBoard(m_window, 8 * 5, 8);
 
   public:
     void draw(double dt) noexcept override
@@ -87,29 +117,52 @@ class PlayView final : public gui::View
 
         solidTick += dt;
         if (solidTick > 0.03) {
+            score.score++;
             solidTick -= 0.03;
             grid.moveCurrentSolid(sim::Direction::down);
             replaceCheck(grid, solidTick);
         }
 
-        m_window.drawRect(0, 0, m_window.width(), m_window.height(), 0xFFFFFF);
-
         grid.render();
+        score.render();
         const int32_t s = std::min(m_window.height(), m_window.width());
 
-        const double gw = static_cast<double>(grid.width()) / grid.height();
+        const int32_t gw =
+          s * static_cast<double>(grid.width()) / grid.height();
+        const int32_t gh = s;
 
-        m_window.drawRect((m_window.width() - s) / 2,
-                          (m_window.height() - s) / 2,
-                          s,
-                          s,
-                          0xFF0000);
+        const int32_t nextBoxSize = 0.2 * s;
 
-        m_window.drawTexture((m_window.width() - gw * s) / 2,
-                             (m_window.height() - s) / 2,
-                             gw * s,
-                             s,
+        // Background
+        m_window.drawRect(0, 0, m_window.width(), m_window.height(), 0xFFFFFF);
+
+        // Next shape
+        m_window.drawRect(m_window.width() - nextBoxSize - 0.03 * s,
+                          m_window.height() - nextBoxSize - 0.7 * s,
+                          nextBoxSize,
+                          nextBoxSize,
+                          0x00FF00);
+
+        // Next color
+        m_window.drawRect(m_window.width() - nextBoxSize - 0.265 * s,
+                          m_window.height() - nextBoxSize - 0.7 * s,
+                          nextBoxSize,
+                          nextBoxSize,
+                          0x00FF00);
+
+        // Game
+        m_window.drawTexture((m_window.width() - gw) * 0.1,
+                             (m_window.height() - gh) / 2,
+                             gw,
+                             gh,
                              grid);
+
+        // Score
+        m_window.drawTexture(gw + (m_window.width() - gw) * 0.1,
+                          m_window.height() - 0.4 * s,
+                          m_window.width() - gw - (m_window.width() - gw) * 0.1,
+                          nextBoxSize,
+                          score);
     }
 
     PlayView(gui::Window& window)
@@ -132,60 +185,6 @@ class IntroView final : public gui::View
     {
     }
 };
-
-class Router final
-{
-    std::vector<std::unique_ptr<gui::View>> m_routes;
-
-  public:
-    uint8_t currentRoute = 0;
-
-    gui::View& currentView() { return *m_routes.at(currentRoute).get(); }
-
-    Router(std::initializer_list<gui::View *> routes) noexcept
-    {
-        for (auto route : routes) {
-            m_routes.push_back(std::unique_ptr<gui::View>(route));
-        }
-    }
-};
-
-class Runner final
-{
-    gui::Window& m_window;
-    Router& m_router;
-    double dt = 0.0;
-    uint32_t start = SDL_GetTicks();
-
-  public:
-    void run()
-    {
-        while (!m_window.isClosed()) {
-            auto now = SDL_GetTicks();
-            dt = (now - start) / 1000.0;
-            start = now;
-
-            m_window.pollEvents();
-            m_router.currentView().draw(dt);
-            m_window.flush();
-        }
-    }
-
-    Runner(gui::Window& window, Router& router)
-      : m_window(window)
-      , m_router(router)
-    {
-    }
-};
-
-namespace Route {
-enum Route : uint8_t
-{
-    intro,
-    play,
-    gameover
-};
-}
 
 int
 main()

@@ -2,7 +2,17 @@
 
 A tetris game without integrity.
 
+## Current requirements:
+
+- SDL2
+- SDL2_ttf
+- SDL2_image
+- https://github.com/actsl/kiss_sdl (Add as a submodule)
+
 ## TODO list
+
+- CMAKE build for debug & release
+- CMAKE tests
 
 - UI for intro
 - UI for upcoming blocks
@@ -12,4 +22,3 @@ A tetris game without integrity.
 - a real README.md
 - audio
 - CI/CD for windows builds
-- replace cmake with Makefile

@@ -1,6 +1,6 @@
-BasedOnStyle: Mozilla
+BasedOnStyle: Google
 IndentWidth: 4
-FixNamespaceComments: true
 DerivePointerAlignment: false
 PointerAlignment: Right
 ReferenceAlignment: Left
+AccessModifierOffset: -4
